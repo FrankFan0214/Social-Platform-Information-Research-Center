@@ -40,7 +40,6 @@ topicName = 'dcard-topic'
 select_url = """select Url 
                 from article_confirm
                 where first_crawl = 0
-                limit 1
                 """ # 如果爬到一半被擋，想要從上次爬到的地方，可以設where條件 first_crawl = 0
 cursor.execute(select_url)
 result = cursor.fetchall()

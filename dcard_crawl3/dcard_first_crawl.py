@@ -99,6 +99,7 @@ for row in result:
         # 先移到開啟emoji小頁面的地方
         little_page = driver1.find_element(By.CLASS_NAME, 'r1skb6m4')
         driver1.execute_script("arguments[0].scrollIntoView({block:'center'});", little_page)
+        sleep(2)
         driver1.find_element(By.CLASS_NAME, 'r1skb6m4').click()
         sleep(2)
         # 各個emoji數

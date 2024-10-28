@@ -29,13 +29,6 @@ num_articles = 100
 block = 0
 # 每個版的頭不同，data-key不同
 head = 0
-# 初始序號
-initial_serial = 1
-# 定義ID格式
-def generate_code(date,serial):
-    # 將月份和日期與序號結合
-    return f"{date}{serial:03}"  # 序號以三位數格式填充
-
 for i in range(head, num_articles+head):
     # 預防爬的過程出問題，還是可以把爬到的存下來
     try:
@@ -49,14 +42,16 @@ for i in range(head, num_articles+head):
                 driver.execute_script("window.scrollBy(0, 500);")
         # 抓取連結
         url = element_by_data_key.find_element(By.CLASS_NAME, "t1gihpsa").get_attribute("href")
+        # 抓取文章ID
+        article_ID = url.split('/')[-1]
         # 設定爬取日期
         current_date = datetime.now().date()
         # ID的前半部分
         date_str = current_date.strftime('%m%d')
         # 將data insert 到 MySQL
-        insert = """insert into article_confirm(ID, Date, Url)
+        insert = """insert ignore into article_confirm(ID, Date, Url)
                         values(%s, %s, %s)"""
-        data = (generate_code(date_str,initial_serial+i), current_date, f"{url}")
+        data = (article_ID, current_date, f"{url}")
         cursor.execute(insert, data)
         connection.commit()
         # 頁面向下滾動

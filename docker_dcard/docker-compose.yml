@@ -1,0 +1,45 @@
+version: '3'
+services:
+  # 定義 Selenium Hub
+  selenium-hub:
+    image: selenium/hub:4.6.0  # 使用最新的 Selenium Hub 版本
+    container_name: selenium-hub
+    ports:
+      - "4444:4444"  # Hub 將在 4444 端口上運行
+    networks:
+      - selenium-net
+
+  # 定義 Chrome Node
+  chrome:
+    image: selenium/node-chrome:4.6.0  # 使用最新的 Chrome Node 版本
+    container_name: chrome
+    shm_size: "2gb"
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub  # 指定 Hub 的主機
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    depends_on:
+      - selenium-hub
+    networks:
+      - selenium-net
+
+  # 定義你的應用服務
+  selenium-app:
+    build: .
+
+    container_name: selenium-app
+    volumes:
+      - ./src:/workspace/src  # 將本地的 src 目錄掛載到容器中
+    shm_size: '2gb'
+    environment:
+      - DISPLAY=:99  # 無頭模式運行 Chrome
+    networks:
+      - selenium-net
+    depends_on:
+      - selenium-hub  # 等待 Hub 和 Chrome 都啟動
+
+networks:
+  selenium-net:
+    driver: bridge
+
+

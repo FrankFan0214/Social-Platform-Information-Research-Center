@@ -1,0 +1,62 @@
+{
+  "build": {
+    "dockerfile": "../Dockerfile"  // 更新 Dockerfile 路徑，因為它已經在同一個目錄
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bierner.markdown-mermaid",
+        "charliermarsh.ruff",
+        "donjayamanne.githistory",
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        "shardulm94.trailing-spaces",
+        "shinichi-takii.sql-bigquery",
+        "streetsidesoftware.code-spell-checker",
+        "vivaxy.vscode-conventional-commits",
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "ms-python.pylint",
+        "ms-python.isort",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.tabSize": 4,
+        "editor.rulers": [
+          100
+        ],
+        "[python]": {
+          "python.formatting.provider": "black",
+          "editor.codeActionsOnSave": {
+            "editor.formatOnSave": "always",
+            "source.unusedImports": "never",
+            "source.organizeImports": "always"
+          }
+        }
+      }
+    }
+  },
+  "remoteEnv": {
+    "PYTHONPATH": "/workspaces/demo-devcontainer/src"
+  },
+  "postCreateCommand": "sh ./.devcontainer/postCreateCommand.sh",
+  "runArgs": [
+    "--name",
+    "data-pipeline",
+    "--network",
+    "host"
+  ],
+  "dockerComposeFile": "../docker-compose.yml",  // 添加指向 docker-compose.yml
+  "service": "selenium-app",  // 定義你要開發的主要服務
+  "workspaceFolder": "/workspace/src",  // 設置工作目錄為 src
+  "shutdownAction": "none",  // 當你停止開發容器時，不會停止其他容器
+  "portsAttributes": {
+    "8080": {
+      "label": "App Server",
+      "onAutoForward": "openPreview"
+    }
+  }
+}
+

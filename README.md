@@ -1,4 +1,5 @@
 專案名稱:社群輿論與情緒分析
+Social Platform Information Research Center
 
 資料分析練習專案:
 目的:透過分析社群討論事件，取得當前大眾討論焦點與情緒變化。

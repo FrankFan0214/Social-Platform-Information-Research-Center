@@ -67,7 +67,7 @@ for row in result:
         current_date = datetime.now().date()
         update_first_crawl = """UPDATE article_confirm
                                 SET first_crawl = 1,
-                                    confirm_num = 0
+                                    confirm_num = 0,
                                     last_update = %s
                               WHERE Url = %s"""
         cursor.execute(update_first_crawl, (current_date, url))
@@ -82,11 +82,12 @@ for row in result:
         current_date = datetime.now().date()
         update_first_crawl = """UPDATE article_confirm
                                 SET first_crawl = 1,
-                                    confirm_num = 0
+                                    confirm_num = 0,
                                     last_update = %s
                               WHERE Url = %s"""
         cursor.execute(update_first_crawl, (current_date, url))
         connection.commit()
+        driver1.quit()
         continue
     # 抓取看版類型
     type = driver1.find_element(By.CLASS_NAME, f"tcjsomj").text

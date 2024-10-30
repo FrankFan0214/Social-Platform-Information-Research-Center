@@ -84,6 +84,7 @@ for row in result:
                               WHERE Url = %s"""
         cursor.execute(update_first_crawl, (current_date, url))
         connection.commit()
+        driver1.quit()
         continue
     # 抓取看版類型
     type = driver1.find_element(By.CLASS_NAME, f"tcjsomj").text

@@ -4,7 +4,7 @@ from datetime import datetime
 # 發送 Slack 通知的共用函數
 def send_slack_message(context, message):
     log_url = context.get('task_instance').log_url
-    log_url = log_url.replace("localhost", "35.221.244.222")  # 替換 localhost
+    log_url = log_url.replace("localhost", "<airflowIP>")  # 替換 localhost
 
     slack_msg = f"""
         {message}

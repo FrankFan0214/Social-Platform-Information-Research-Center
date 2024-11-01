@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
 # 連接到 MongoDB Atlas（雲端）
-atlas_uri = "mongodb+srv://TIR103:password6341@tir103.higsi.mongodb.net/?retryWrites=true&w=majority"
+atlas_uri = "<URI>"
 atlas_client = MongoClient(atlas_uri,tls=True,tlsCAFile='/etc/ssl/cert.pem')
 
 # 連接到本地 MongoDB

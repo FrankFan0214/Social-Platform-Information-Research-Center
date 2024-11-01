@@ -6,10 +6,10 @@ from selenium.webdriver.common.by import By
 #----------------------MySQL--------------------------------------
 import pymysql
 connection = pymysql.connect(
-    host='34.81.244.193',  # 主機名稱
+    host='<IP>',  # 主機名稱
     port=3306, # 指定 MySQL 使用的端口號
-    user='user2',  # 資料庫使用者名稱
-    password='password2',  # 資料庫密碼
+    user='xxxx',  # 資料庫使用者名稱
+    password='xxxx',  # 資料庫密碼
     database='DCARD',  # 資料庫名稱
     charset='utf8mb4',  # 使用的編碼
 )

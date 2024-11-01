@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
 # MongoDB 連接字符串
-url = "mongodb+srv://TIR103:password6341@tir103.higsi.mongodb.net/?retryWrites=true&w=majority"
+url = "URI"
 
 try:
     # 連接到 MongoDB Atlas，並指定 CA 憑證文件

@@ -290,10 +290,10 @@ def connect_to_mysql():
     connection = None
     try:
         connection = mysql.connector.connect(
-            host='34.81.244.193',
+            host='<IP>',
             database='PTT',
-            user='user3',
-            password='password3'
+            user='XXXX',
+            password='XXXX'
         )
 
         if connection.is_connected():
@@ -500,7 +500,7 @@ def main():
         logging.basicConfig(level=logging.INFO)
 
         # MongoDB 連線設定
-        mongo_uri = "mongodb://user4:password4@35.189.181.117:28017/admin"
+        mongo_uri = "mongodb://XXXX:XXXX@<IP>:28017/admin"
         client = MongoClient(mongo_uri)
         db = client['kafka']
         collection = db['Ptt']  # 使用單一collection #kafka_collection_ETtoday

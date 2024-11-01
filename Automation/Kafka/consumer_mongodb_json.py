@@ -31,7 +31,7 @@ def check_mongodb_connection(client):
 if __name__ == '__main__':
     # Kafka 消費者配置
     props = {
-        'bootstrap.servers': '104.155.214.8:9092',  # Kafka broker 地址
+        'bootstrap.servers': '<IP>:9092',  # Kafka broker 地址
         'group.id': 'json-test',  # Consumer Group ID
         'auto.offset.reset': 'earliest',  # 從最早的 offset 開始消費
         'enable.auto.commit': True,  # 自動提交 offset
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     consumer = Consumer(props)
 
     # 訂閱 Kafka topic
-    topicName = 'test-topic'
+    topicName = ''
     consumer.subscribe([topicName], on_assign=print_assignment, on_revoke=print_revoke)
 
     # 連接到 MongoDB

@@ -12,7 +12,7 @@ import gc
 # 發送 Slack 通知的共用函數
 def send_slack_message(context, message):
     log_url = context.get('task_instance').log_url
-    log_url = log_url.replace("localhost", "35.221.244.222")  # 替換 localhost
+    log_url = log_url.replace("localhost", "<airflowIP>")  # 替換 localhost
 
     slack_msg = f"""
         {message}
@@ -58,7 +58,7 @@ def frank_ptt(**context):
     # Kafka 設定
     kafka_config = {
         # Kafka集群在那裡?
-        'bootstrap.servers': '104.155.214.8:9092',  # <-- 置換成要連接的Kafka集群
+        'bootstrap.servers': '<IP>:9092',  # <-- 置換成要連接的Kafka集群
         'max.in.flight.requests.per.connection': 1, 
         'error_cb': error_cb  # 設定接收error訊息的callback函數
     }

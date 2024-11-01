@@ -10,7 +10,7 @@ import re
 
 # 初始化 KafkaProducer 實例
 kafka_producer_news = KafkaProducer(
-    servers='104.155.214.8:9092', 
+    servers='<IP>:9092', 
     topic='dcard-topic'
 )
 

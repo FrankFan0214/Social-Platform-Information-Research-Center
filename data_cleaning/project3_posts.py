@@ -40,7 +40,7 @@ from functools import lru_cache
 class DatabaseManager:
     def __init__(self):
         # MongoDB 連接設定
-        self.mongo_uri = "mongodb://user4:password4@35.189.181.117:28017/admin"
+        self.mongo_uri = "mongodb://XXXX:XXXX@<IP>:28017/admin"
         self.mongo_client = None
         self.mysql_conn = None
         self.mysql_cursor = None
@@ -60,10 +60,10 @@ class DatabaseManager:
     def connect_mysql(self):
         try:
             self.mysql_conn = mysql.connector.connect(
-                host='34.81.244.193',
+                host='<IP>',
                 database='PTT',
-                user='user3',
-                password='password3',
+                user='XXXX',
+                password='XXXX',
                 buffered=True,
                 pool_size=5
             )

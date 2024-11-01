@@ -15,7 +15,7 @@ if __name__ == '__main__':
     # 步驟1. 設定要連線到Kafka集群的相關設定
     props = {
         # Kafka集群在那裡?
-        'bootstrap.servers': '104.155.214.8:9092',  # <-- 置換成要連接的Kafka集群
+        'bootstrap.servers': '<IP>:9092',  # <-- 置換成要連接的Kafka集群
         'max.in.flight.requests.per.connection': 1,
         'error_cb': error_cb                    # 設定接收error訊息的callback函數
     }

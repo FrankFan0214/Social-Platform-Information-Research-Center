@@ -6,7 +6,7 @@ from utils.kafkaset import error_cb, try_decode_utf8, print_assignment, print_re
 
 def kafka_consumer_job():
     props = {
-        'bootstrap.servers': '104.155.214.8:9092',
+        'bootstrap.servers': '<IP>:9092',
         'group.id': 'jsonptt',
         'auto.offset.reset': 'earliest',
         'enable.auto.commit': True,
@@ -18,10 +18,10 @@ def kafka_consumer_job():
     topicName = 'test-topic'
     consumer.subscribe([topicName], on_assign=print_assignment, on_revoke=print_revoke)
 
-    mongo_client = MongoClient("mongodb://airflow:airflow@35.189.181.117:28017/admin")
+    mongo_client = MongoClient("mongodb://xxxx:xxxx@<IP>:28017/admin")
     check_mongodb_connection(mongo_client)
-    db = mongo_client['kafka']
-    collection = db['Ptt']
+    db = mongo_client['']
+    collection = db['']
 
     message_count = 0
     batch_count = 200

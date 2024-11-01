@@ -18,13 +18,13 @@ def C2K_ptt(**context):
     # Kafka 設定
     kafka_config = {
         # Kafka集群在那裡?
-        'bootstrap.servers': '104.155.214.8:9092',  # <-- 置換成要連接的Kafka集群
+        'bootstrap.servers': '<IP>:9092',  # <-- 置換成要連接的Kafka集群
         'max.in.flight.requests.per.connection': 1, 
         'error_cb': error_cb  # 設定接收error訊息的callback函數
     }
 
     producer = Producer(kafka_config)
-    topic = 'test-topic'  # 替換為你的 Kafka topic 名稱
+    topic = ''  # 替換為你的 Kafka topic 名稱
 
     base_url = "https://www.ptt.cc"
     board_url = "/bbs/Gossiping/index38937.html"

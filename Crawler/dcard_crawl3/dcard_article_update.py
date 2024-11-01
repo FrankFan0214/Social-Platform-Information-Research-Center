@@ -10,10 +10,10 @@ from selenium.common.exceptions import NoSuchElementException, StaleElementRefer
 #------------------------MySQL-----------------------------------
 import pymysql
 connection = pymysql.connect(
-    host='34.81.244.193',  # 主機名稱
+    host='<IP>',  # 主機名稱
     port=3306, # 指定 MySQL 使用的端口號
-    user='user2',  # 資料庫使用者名稱
-    password='password2',  # 資料庫密碼
+    user='xxxx',  # 資料庫使用者名稱
+    password='xxxx',  # 資料庫密碼
     database='DCARD',  # 資料庫名稱
     charset='utf8mb4',  # 使用的編碼
     # cursorclass=pymysql.cursors.DictCursor  # 以字典形式返回查詢結果
@@ -28,7 +28,7 @@ def error_cb(err):
 # 步驟1. 設定要連線到Kafka集群的相關設定
 props = {
         # Kafka集群在那裡?
-        'bootstrap.servers': '104.155.214.8:9092',  # <-- 置換成要連接的Kafka集群
+        'bootstrap.servers': '<IP>:9092',  # <-- 置換成要連接的Kafka集群
         'max.in.flight.requests.per.connection': 1,
         'error_cb': error_cb                    # 設定接收error訊息的callback函數
     }

@@ -40,7 +40,7 @@ class ETTodayNewsScraper:
         
         # Kafka 相關設定
         self.kafka_config = kafka_config or {
-            'bootstrap.servers': '104.155.214.8:9092',
+            'bootstrap.servers': '<IP>:9092',
             'max.in.flight.requests.per.connection': 1,
             'error_cb': self.error_cb
         }
@@ -225,7 +225,7 @@ class ETTodayNewsScraper:
 def main():
     # Kafka配置
     kafka_config = {
-        'bootstrap.servers': '104.155.214.8:9092',
+        'bootstrap.servers': '<IP>:9092',
         'max.in.flight.requests.per.connection': 1,
     }
     

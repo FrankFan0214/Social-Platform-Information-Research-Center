@@ -46,3 +46,7 @@ class KafkaProducer:
     def flush(self):
         """將所有在隊列中的訊息推送到 Kafka"""
         self.producer.flush()
+        
+    def close(self):
+        self.flush()  # 可以在 close 中再次調用 flush 以確保所有消息已發送
+        self.producer = None  # 關閉後設置 producer 為 None

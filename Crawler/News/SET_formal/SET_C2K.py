@@ -50,7 +50,7 @@ for item in news_items:
         text_content = article_content.get_text(separator="\n", strip=True)
         
         # 提取發佈時間（假設發佈時間在 time 標籤內）
-        publish_time_tag = news_soup.find('time')
+        publish_time_tag = news_soup.find('time', class_='page_date')
         publish_time = publish_time_tag.text.strip() if publish_time_tag else "未知"
 
         # 使用正規表達式匹配記者姓名

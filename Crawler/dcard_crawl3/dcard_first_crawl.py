@@ -58,8 +58,8 @@ for row in result:
     sleep(10)
     # 如果搜尋不到文章，就會跳過
     try:
-        # 進入dcard文章
-        driver1.find_element(By.XPATH, f"//*[@id='rso']/div[1]/div/div/div/div[1]/div/div/span/a[@href='{url}']").click()
+        # 進入dcard文章      
+        driver1.find_element(By.XPATH, f'//*[@id="rso"]/div[1]/div/div/div[1]/div/div/span/a[@href="{url}"]').click()
         sleep(10)
     except Exception:
         #如果文章進不去，把first_crawl=1, confirm_num不改才不會進到第三階段

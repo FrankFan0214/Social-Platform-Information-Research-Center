@@ -41,7 +41,8 @@ for element in elements:
         if title == 'No title available':
             continue
         
-        link = "https://udn.com" + a_tag.get('href', '')  # 構建完整的 URL，預設為空字串
+        href = a_tag.get('href', '')
+        link = href if href.startswith("http") else f"https://udn.com{href}"
 
         print(f"Title: {title}")
         print(f"Link: {link}")

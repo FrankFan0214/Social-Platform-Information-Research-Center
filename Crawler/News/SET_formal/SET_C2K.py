@@ -16,7 +16,7 @@ kafka_producer_news = KafkaProducer(
 
 # 初始化 WebDriver 和 PageScroller
 driver = webdriver.Chrome()
-scroller = PageScroller(driver, url="https://www.setn.com/ViewAll.aspx", max_scrolls=20, scroll_pause=1.5)
+scroller = PageScroller(driver, url="https://www.setn.com/ViewAll.aspx", max_scrolls=5, scroll_pause=1.5)
 
 # 開啟網頁並滾動
 scroller.open_page()
@@ -30,7 +30,7 @@ soup = BeautifulSoup(html, 'html.parser')
 news_items = soup.find_all(class_='newsItems')
 
 # 當前抓取的時間
-crawl_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+crawl_time = datetime.now().strftime('%Y-%m-%d')
 
 # 遍歷每個新聞項目，提取分類、完整的 href 和標題，並抓取詳細內容
 for item in news_items:
@@ -51,7 +51,18 @@ for item in news_items:
         
         # 提取發佈時間（假設發佈時間在 time 標籤內）
         publish_time_tag = news_soup.find('time', class_='page_date')
-        publish_time = publish_time_tag.text.strip() if publish_time_tag else "未知"
+        publish_time = "未知"
+
+        if publish_time_tag:
+            publish_time_text = publish_time_tag.text.strip()
+            try:
+                # 假設日期格式為 "%Y-%m-%d %H:%M" 進行解析
+                parsed_publish_time = datetime.strptime(publish_time_text, "%Y-%m-%d %H:%M")
+                publish_time = parsed_publish_time.strftime("%Y-%m-%d")  # 只顯示年月日
+            except ValueError:
+                print("日期格式不匹配，無法解析")
+
+        print(f"發佈時間: {publish_time}")
 
         # 使用正規表達式匹配記者姓名
         reporter_match = re.search(r"記者([\u4e00-\u9fa5]{2,4})／", text_content)

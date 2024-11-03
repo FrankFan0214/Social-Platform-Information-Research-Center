@@ -29,7 +29,7 @@ soup = BeautifulSoup(html, 'html.parser')
 elements = soup.find_all('div', class_='story-list__text')  # 使用正確的 class 名稱
 
 # 當前抓取的時間
-crawl_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+crawl_time = datetime.now().strftime('%Y-%m-%d')
 
 # 遍歷每個新聞項目
 for element in elements:
@@ -63,9 +63,17 @@ for element in elements:
                 if len(breadcrumb_items) >= 2:
                     # 取得後兩個項目的文字內容
                     categories = "/".join([item.get_text(strip=True) for item in breadcrumb_items[-2:]])
+
                 # 抓取日期
                 date_tag = article_content_div.find('time', class_='article-content__time')
-                date = date_tag.text.strip() if date_tag else "None"
+                date_text = date_tag.text.strip() if date_tag else "None"
+
+                if date_text != "None":
+                    parsed_date = datetime.strptime(date_text, "%Y-%m-%d %H:%M")  # 使用日期的正確格式
+                    formatted_date_str = parsed_date.strftime("%Y-%m-%d")  # 只取年月日
+                    print(formatted_date_str)
+                else:
+                    print("日期無法解析")
 
                 # 抓取文章內容並去除所有空白和換行
                 paragraphs = article_content_div.find_all('p')
@@ -75,7 +83,7 @@ for element in elements:
                     "url": link,
                     "reporter": reporter_name,
                     "content": text_content,
-                    "date": date,
+                    "date": formatted_date_str,
                     "news_category": categories,
                     "crawl_time": crawl_time
                 }

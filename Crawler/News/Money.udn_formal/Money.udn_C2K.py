@@ -34,7 +34,7 @@ soup = BeautifulSoup(html, 'html.parser')
 elements = soup.find_all('div', class_='story__content')
 
 # 當前抓取的時間
-crawl_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+crawl_time = datetime.now().strftime('%Y-%m-%d')
 
 # 遍歷每個新聞項目
 for element in elements:
@@ -48,7 +48,7 @@ for element in elements:
         formatted_date = "未知"
         if date_text != "未知":
             try:
-                formatted_date = datetime.strptime(date_text, "%Y-%m-%d %H:%M").strftime("%Y-%m-%d %H:%M:%S")
+                formatted_date = datetime.strptime(date_text, "%Y-%m-%d %H:%M").strftime("%Y-%m-%d")
             except ValueError:
                 pass
         print(f"Date: {formatted_date}")

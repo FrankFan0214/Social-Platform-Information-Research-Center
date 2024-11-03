@@ -41,9 +41,10 @@ for element in elements:
         if title == 'No title available':
             continue
         
+        # 構建完整的 URL
         href = a_tag.get('href', '')
         link = href if href.startswith("http") else f"https://udn.com{href}"
-
+        
         print(f"Title: {title}")
         print(f"Link: {link}")
 
@@ -58,7 +59,9 @@ for element in elements:
                 # 抓取作者名稱
                 author_tag = article_content_div.find('span', class_='article-content__author')
                 reporter_name = author_tag.find('a').text.strip() if author_tag and author_tag.find('a') else "None"
+
                 #抓取分類
+                categories = "未分類"
                 breadcrumb_items = article_content_div.find_all('a', class_='breadcrumb-items')
                 if len(breadcrumb_items) >= 2:
                     # 取得後兩個項目的文字內容
@@ -68,10 +71,16 @@ for element in elements:
                 date_tag = article_content_div.find('time', class_='article-content__time')
                 date_text = date_tag.text.strip() if date_tag else "None"
 
+                # 預設日期格式
+                formatted_date_str = "未知"
+
                 if date_text != "None":
-                    parsed_date = datetime.strptime(date_text, "%Y-%m-%d %H:%M")  # 使用日期的正確格式
-                    formatted_date_str = parsed_date.strftime("%Y-%m-%d")  # 只取年月日
-                    print(formatted_date_str)
+                    try:
+                        parsed_date = datetime.strptime(date_text, "%Y-%m-%d %H:%M")  # 使用日期的正確格式
+                        formatted_date_str = parsed_date.strftime("%Y-%m-%d")  # 只取年月日
+                        print(formatted_date_str)
+                    except ValueError:
+                        print("日期格式無法解析")
                 else:
                     print("日期無法解析")
 
@@ -84,7 +93,7 @@ for element in elements:
                     "reporter": reporter_name,
                     "content": text_content,
                     "date": formatted_date_str,
-                    "news_category": categories,
+                    "category": categories,
                     "crawl_time": crawl_time
                 }
                 json_data = json.dumps(news_data, ensure_ascii=False)

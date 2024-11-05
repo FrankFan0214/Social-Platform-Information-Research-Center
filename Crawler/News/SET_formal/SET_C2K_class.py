@@ -150,7 +150,7 @@ class NewsScraper:
 # 主程式
 if __name__ == "__main__":
     try:
-        kafka_servers = '104.155.214.8:9092'
+        kafka_servers = '<IP>:9092'
         kafka_topic = 'news-topic'
         max_scrolls = 4  # 設定滑動次數
         headless = True  # 設定無頭模式（True 表示無頭，False 表示顯示瀏覽器窗口）

@@ -13,7 +13,7 @@ import gc
 def send_slack_message(context, message):
     # 取得當前任務的 log 網址並將 localhost 替換為外部 IP
     log_url = context.get('task_instance').log_url
-    log_url = log_url.replace("localhost", "35.221.244.222")
+    log_url = log_url.replace("localhost", "0.0.0.0") #預設本機
 
     # 設定 Slack 通知內容，包括任務名稱、DAG 名稱、執行時間、以及 log 網址
     slack_msg = f"""
@@ -61,7 +61,7 @@ def frank_ptt(**context):
 
     # Kafka 連線設定
     kafka_config = {
-        'bootstrap.servers': '104.155.214.8:9092',
+        'bootstrap.servers': '0.0.0.0:9092', #預設本機
         'max.in.flight.requests.per.connection': 1,
         'error_cb': error_cb
     }

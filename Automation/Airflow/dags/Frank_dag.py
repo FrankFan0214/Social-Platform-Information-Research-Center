@@ -118,21 +118,21 @@ def frank_ptt(**context):
                 comments.append({
                     "push": push_tag,
                     "user": push_user,
-                    "content": push_content[2:],
+                    "comment": push_content[2:],
                     "time": push_time
                 })
 
-            # 移除不要的元素並返回文章資料
+            #擷取初始文章資料
             if content:
                 for tag in content.find_all(['span', 'div']):
                     tag.extract()
                 return {
-                    "author": author,
-                    "cont": content.text.strip(),
-                    "good": push_count,
-                    "bad": boo_count,
-                    "arrow": arrow_count,
-                    "comment": comments
+                    "作者": author,
+                    "內容": content.text.strip(),
+                    "推": push_count,
+                    "噓": boo_count,
+                    "箭頭": arrow_count,
+                    "留言": comments
                 }
         except requests.RequestException as e:
             print(f"抓取文章內容時發生錯誤: {e}")
@@ -178,7 +178,7 @@ def frank_ptt(**context):
                             "bad": post_data["噓"],
                             "arrow": post_data["箭頭"],
                             "url": link,
-                            "message": post_data["留言"]
+                            "comment_num": post_data["留言"]
                         }
 
                         json_data = json.dumps(post_document, ensure_ascii=False)

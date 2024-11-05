@@ -38,16 +38,14 @@ class ETTodayNewsScraper:
             }
         }
         
-        # Kafka 相關設定
         self.kafka_config = kafka_config or {
-            'bootstrap.servers': '<IP>:9092',
+            'bootstrap.servers': '104.155.214.8:9092',
             'max.in.flight.requests.per.connection': 1,
             'error_cb': self.error_cb
         }
         self.topic = topic
         self.producer = Producer(self.kafka_config) if kafka_config is not None else None
         
-        # 時間相關設定
         self.today = date.today()
         self.yesterday = self.today - timedelta(days=1)
         self.formatted_date = self.yesterday.strftime("%m/%d")
@@ -55,36 +53,69 @@ class ETTodayNewsScraper:
 
     @staticmethod
     def error_cb(err):
-        """Kafka錯誤回調函數"""
         print('Error: %s' % err)
 
     def delivery_report(self, err, msg):
-        """Kafka訊息傳送狀態回調函數"""
         if err is not None:
             print(f"訊息傳送失敗: {err}")
         else:
             print(f"訊息成功傳送到 {msg.topic()} 分區 [{msg.partition()}]")
 
+    def extract_reporter(self, text: str) -> str:
+        """從文字中提取記者名字"""
+        if not text:
+            return ""
+        
+        try:
+            # 移除多餘的空白
+            text = text.strip()
+            
+            # 尋找記者和報導之間的文字
+            start_idx = text.find('記者')
+            end_idx = text.find('／')
+            
+            if start_idx != -1 and end_idx != -1:
+                reporter_name = text[start_idx + 2:end_idx].strip()
+                # 清理記者名字中的特殊字符
+                reporter_name = ''.join(char for char in reporter_name if char.isalnum() or char.isspace())
+                return reporter_name.strip()
+            return ""
+        except Exception:
+            return ""
+
     def send_to_kafka(self, news_data: Dict) -> None:
-        """發送新聞數據到Kafka"""
         if self.producer is None:
             return
         
         try:
-            json_data = json.dumps(news_data, ensure_ascii=False)
+            # 確保reporter欄位是字串類型
+            if news_data.get('reporter') is None:
+                news_data['reporter'] = ""
+                
+            # 序列化前檢查所有欄位
+            cleaned_data = {
+                'title': str(news_data.get('title', '')),
+                'url': str(news_data.get('url', '')),
+                'reporter': str(news_data.get('reporter', '')),
+                'content': str(news_data.get('content', '')),
+                'date': str(news_data.get('date', '')),
+                'category': str(news_data.get('category', '')),
+                'crawl_time': str(news_data.get('crawl_time', ''))
+            }
+            
+            json_data = json.dumps(cleaned_data, ensure_ascii=False)
             self.producer.produce(
                 self.topic,
-                key=news_data['url'],
+                key=cleaned_data['url'],
                 value=json_data.encode('utf-8'),
                 callback=self.delivery_report
             )
             self.producer.flush()
-            print(f"已傳送文章至 Kafka: {news_data['title']}")
+            print(f"已傳送文章至 Kafka: {cleaned_data['title']}")
         except Exception as e:
             print(f"發送到Kafka時發生錯誤: {str(e)}")
 
     def _fetch_page_content(self, url: str) -> Optional[BeautifulSoup]:
-        """獲取頁面內容並返回BeautifulSoup對象"""
         try:
             response = requests.get(url)
             if response.status_code == 200:
@@ -95,35 +126,38 @@ class ETTodayNewsScraper:
             print(f"發生錯誤: {str(e)}")
             return None
 
-    def _get_article_content_and_likes_and_date(self, url: str) -> Tuple[Optional[str], int, Optional[str]]:
-        """獲取文章內容、按讚數和日期"""
+    def _get_article_content_and_date(self, url: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         soup = self._fetch_page_content(url)
         content = None
-        likes = 0
         date = None
+        reporter = None
         
         if soup:
             # 獲取文章內容
             article_content = soup.find('div', class_='story')
             content = article_content.get_text(strip=True) if article_content else None
             
-            # 獲取按讚數
-            try:
-                like_element = soup.find('span', id=lambda x: x and x.startswith('u_0_1_'))
-                if like_element:
-                    likes_text = like_element.get_text(strip=True)
-                    likes = int(''.join(filter(str.isdigit, likes_text))) if likes_text else 0
-            except Exception as e:
-                print(f"獲取按讚數時發生錯誤: {str(e)}")
+            # 獲取記者資訊 - 改進版本
+            reporter_candidates = [
+                soup.find('p', string=lambda x: x and '記者' in x and '／' in x),
+                soup.find('p', class_='story_author'),
+                soup.find('div', string=lambda x: x and '記者' in x and '／' in x)
+            ]
+            
+            for candidate in reporter_candidates:
+                if candidate:
+                    reporter_text = candidate.get_text(strip=True)
+                    reporter = self.extract_reporter(reporter_text)
+                    if reporter:
+                        break
 
             # 獲取日期
             date_element = soup.find('time', class_='date')
             date = date_element.get_text(strip=True) if date_element else None
                 
-        return content, likes, date
+        return content, date, reporter
 
     def fetch_homepage_news(self) -> List[Dict]:
-        """獲取首頁新聞"""
         news_list = []
         soup = self._fetch_page_content(self.base_url)
         
@@ -139,32 +173,25 @@ class ETTodayNewsScraper:
                 if not article_url.startswith('http'):
                     article_url = self.base_url + article_url
                 
-                content, likes, date = self._get_article_content_and_likes_and_date(article_url)
+                content, date, reporter = self._get_article_content_and_date(article_url)
                 if content:
                     news_data = {
                         'title': title_text,
                         'url': article_url,
+                        'reporter': reporter or "",
                         'content': content,
-                        'likes': likes,
-                        'date': date,
+                        'date': date or "",
                         'category': 'homepage',
                         'crawl_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     }
                     news_list.append(news_data)
-                    
-                    # 發送到Kafka
                     self.send_to_kafka(news_data)
-                    
-                    # 強制進行垃圾回收
                     gc.collect()
-                    
-                    # 加入延遲以避免過度請求
                     time.sleep(1)
 
         return news_list
 
     def fetch_news(self, category: str) -> List[Dict]:
-        """獲取指定類別的新聞"""
         if category not in self.news_categories:
             raise ValueError(f"不支援的新聞類別: {category}")
 
@@ -185,26 +212,20 @@ class ETTodayNewsScraper:
                 if not article_url.startswith('http'):
                     article_url = self.base_url + article_url
                 
-                content, likes, date = self._get_article_content_and_likes_and_date(article_url)
+                content, date, reporter = self._get_article_content_and_date(article_url)
                 if content:
                     news_data = {
                         'title': title_text,
                         'url': article_url,
+                        'reporter': reporter or "",
                         'content': content,
-                        'likes': likes,
-                        'date': date,
+                        'date': date or "",
                         'category': category,
                         'crawl_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     }
                     news_list.append(news_data)
-                    
-                    # 發送到Kafka
                     self.send_to_kafka(news_data)
-                    
-                    # 強制進行垃圾回收
                     gc.collect()
-                    
-                    # 加入延遲以避免過度請求
                     time.sleep(1)
             else:
                 print(f"無法找到符合的選擇器: {selector}")
@@ -212,40 +233,34 @@ class ETTodayNewsScraper:
         return news_list
 
     def print_news(self, news_list: List[Dict]) -> None:
-        """打印新聞列表"""
         for idx, news in enumerate(news_list, 1):
             print(f'標題{idx}: {news["title"]}')
-            print(f'日期: {news["date"]}')
             print(f'網址: {news["url"]}')
+            print(f'記者: {news["reporter"]}')
             print(f'內容: {news["content"]}')
-            print(f'按讚數: {news["likes"]}')
+            print(f'日期: {news["date"]}')
             print(f'發佈日期: {news["crawl_time"]}')
             print('---')
 
 def main():
-    # Kafka配置
     kafka_config = {
-        'bootstrap.servers': '<IP>:9092',
+        'bootstrap.servers': '104.155.214.8:9092',
         'max.in.flight.requests.per.connection': 1,
     }
     
-    # 創建爬蟲實例
     scraper = ETTodayNewsScraper(kafka_config=kafka_config, topic='news-topic')
     
     try:
-        # 獲取首頁新聞
         print("\n獲取首頁新聞:")
         homepage_news = scraper.fetch_homepage_news()
         scraper.print_news(homepage_news)
         
-        # 獲取所有類別的新聞
         for category in scraper.news_categories.keys():
             print(f"\n獲取{category}類別的新聞:")
             news_list = scraper.fetch_news(category)
             scraper.print_news(news_list)
     
     finally:
-        # 確保所有消息都已發送
         if scraper.producer:
             scraper.producer.flush()
             print("所有消息已發送完成")

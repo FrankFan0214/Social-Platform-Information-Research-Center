@@ -147,6 +147,7 @@ class NewsScraper:
         self.driver.quit()
 
 
+
 # 主程式
 if __name__ == "__main__":
     try:

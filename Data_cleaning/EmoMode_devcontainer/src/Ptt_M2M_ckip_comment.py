@@ -58,6 +58,10 @@ def process_comment(comment):
 
     # 預處理和 CKIP 分析
     preprocessed_content = preprocess_text(comment.get("comment", ""))
+    if not preprocessed_content:  # 檢查是否為空
+        return None
+
+    # CKIP 分析
     ws_result = ws_driver([preprocessed_content])[0]
     pos_result = pos_driver([ws_result])[0]
     ner_result = ner_driver([preprocessed_content])[0]
@@ -97,7 +101,7 @@ def process_content_item(item):
         text_date = None
 
     # 處理留言
-    processed_comments = [process_comment(comment) for comment in value.get("comment_num", [])]
+    processed_comments = [process_comment(comment) for comment in value.get("comment_num", []) if process_comment(comment) is not None]
 
     # 構建更新操作
     processed_data = {
@@ -164,5 +168,5 @@ def process_and_store_content_data(batch_size=20, fetch_size=100, max_records=No
     print(f"數據處理完成，總運行時間：{total_time:.2f} 秒")
 
 # 執行處理
-process_and_store_content_data(max_records=1)
+process_and_store_content_data(max_records=10)
 print("數據處理完成並存儲至 MongoDB collection: ckip_data_comment")

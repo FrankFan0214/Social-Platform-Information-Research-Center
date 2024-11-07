@@ -1,14 +1,15 @@
-from pymongo import MongoClient, UpdateOne
-from pymongo.errors import ServerSelectionTimeoutError
-from ckip_transformers.nlp import CkipWordSegmenter, CkipPosTagger, CkipNerChunker
-from collections import Counter
-import pandas as pd
+import gc
 import re
 import time
-import gc
+from collections import Counter
+
+import pandas as pd
+from ckip_transformers.nlp import CkipNerChunker, CkipPosTagger, CkipWordSegmenter
+from pymongo import MongoClient, UpdateOne
+from pymongo.errors import ServerSelectionTimeoutError
 
 # 初始化 MongoDB 連接
-client = MongoClient('mongodb://airflow:airflow@10.140.0.11:28017/admin')
+client = MongoClient('mongodb://XXXX:XXXX@<IP>:28017/admin')
 db = client["kafka"]
 collection = db["Ptt"]
 db2 = client["cleandata"]
@@ -39,44 +40,36 @@ def calculate_word_frequency(word_list):
 
 # 單則留言處理函數，處理 CKIP 分詞、詞性標註、NER
 def process_comment(comment):
-    # 提取時間並轉換格式
     original_time = comment.get("time", "")
     ip_address = None
     formatted_date = None
-    
+
     if original_time:
-        # 提取 IP 地址和日期
         ip_match = re.match(r"(\d+\.\d+\.\d+\.\d+) (.+)", original_time)
         if ip_match:
             ip_address = ip_match.group(1)
             date_str = ip_match.group(2)
             try:
-                # 格式化為年-月-日
                 formatted_date = pd.to_datetime(f"2024/{date_str}", format="%Y/%m/%d").strftime("%Y-%m-%d")
             except ValueError:
-                formatted_date = date_str  # 若解析失敗，保持原始格式
+                formatted_date = date_str
 
-    # 預處理和 CKIP 分析
     preprocessed_content = preprocess_text(comment.get("comment", ""))
-    if not preprocessed_content:  # 檢查是否為空
+    if not preprocessed_content:
         return None
 
-    # CKIP 分析
     ws_result = ws_driver([preprocessed_content])[0]
     pos_result = pos_driver([ws_result])[0]
     ner_result = ner_driver([preprocessed_content])[0]
 
-    # 計算詞頻
     word_frequency = calculate_word_frequency(ws_result)
     word_pos_data = [{"word": word, "pos": pos, "frequency": word_frequency[word]}
                      for word, pos in zip(ws_result, pos_result)]
 
-    # 處理命名實體識別結果
     ner_counter = Counter([ner[0] for ner in ner_result])
     ner_data = [{"entity": ner[0], "type": ner[1], "counts": ner_counter[ner[0]], "publish_date": formatted_date}
                 for ner in ner_result]
 
-    # 返回處理後的評論數據
     return {
         "push": comment.get("push"),
         "user": comment.get("user"),
@@ -91,7 +84,7 @@ def process_comment(comment):
 def process_content_item(item):
     value = item["value"]
 
-    # 日期處理，將 2023 修改為 2024
+    # 日期處理
     text_date_str = value.get("date", "未知日期")
     try:
         if "2023" in text_date_str:
@@ -111,7 +104,7 @@ def process_content_item(item):
             "publish_date": text_date,
             "title": value.get("title"),
             "author": value.get("author"),
-            "content": preprocess_text(value.get("post", "")),  # 僅預處理，不進行 CKIP 分析
+            "content": preprocess_text(value.get("post", "")),
             "comments": processed_comments
         }
     }
@@ -122,9 +115,6 @@ def process_and_store_content_data(batch_size=20, fetch_size=100, max_records=No
     processed_count = 0
     start_time = time.time()
 
-    # 先取得所有已處理過的文章URL
-    processed_urls = set(output_collection.distinct("url"))
-
     while True:
         if max_records is not None:
             remaining_records = max_records - processed_count
@@ -134,34 +124,31 @@ def process_and_store_content_data(batch_size=20, fetch_size=100, max_records=No
         else:
             fetch_limit = fetch_size
 
-        # 從Ptt collection中排除已處理的文章
-        data = list(collection.find({"key": {"$nin": list(processed_urls)}}, {"key": 1, "value": 1}).limit(fetch_limit))
+        # 查找未處理過的文檔，使用 comment_processed 標記
+        data = list(collection.find({"comment_processed": {"$ne": True}}, {"key": 1, "value": 1}).limit(fetch_limit))
         if not data:
             print("無更多未處理的文章。")
             break
 
         operations = []
+        update_processed = []
         for item in data:
             processed_item = process_content_item(item)
             if processed_item is not None:
                 operations.append(processed_item)
+                update_processed.append(UpdateOne({"_id": item["_id"]}, {"$set": {"comment_processed": True}}))
 
-        # 如果操作列表為空，跳出
-        if not operations:
-            print("所有文章都已處理過，無需進行更多操作。")
-            break
+        if operations:
+            output_collection.bulk_write(operations)
+            collection.bulk_write(update_processed)
+            processed_count += len(operations)
+            print(f"已完成 {processed_count} 篇文章的處理並存入 MongoDB。")
 
-        # 批量寫入操作
-        output_collection.bulk_write(operations)
-        processed_count += len(operations)
-        print(f"已完成 {processed_count} 篇文章的處理並存入 MongoDB。")
-
-        # 每 50 篇回報進度
         if processed_count % 50 == 0:
             elapsed_time = time.time() - start_time
             print(f"已完成 {processed_count} 篇文章的處理，經過時間：{elapsed_time:.2f} 秒")
 
-        del operations, data
+        del operations, data, update_processed
         gc.collect()
 
     total_time = time.time() - start_time

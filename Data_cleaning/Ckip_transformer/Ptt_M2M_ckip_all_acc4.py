@@ -2,6 +2,7 @@ import gc
 import re
 import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 import pandas as pd
@@ -40,18 +41,14 @@ def preprocess_text(text):
 def calculate_word_frequency(word_list):
     return Counter(word_list)
 
-
-
 # 日期處理函數
 def process_date(text_date_str):
     # 預設年份
     default_year = "2024"
-    
     try:
         # 如果日期包含"2023"，替換成"2024"
         if "2023" in text_date_str:
             text_date_str = text_date_str.replace("2023", "2024")
-        
         # 嘗試解析完整格式 YYYY/MM/DD
         if len(text_date_str.split('/')) == 3:
             text_date = pd.to_datetime(text_date_str, format="%Y/%m/%d").strftime("%Y-%m-%d")
@@ -61,10 +58,8 @@ def process_date(text_date_str):
         else:
             raise ValueError("Unsupported date format")
     except ValueError:
-        text_date = None  # 如果無法解析，設置為 None
-
+        text_date = None
     return text_date
-
 
 # 處理單篇文章內容的函數
 def process_content_item(item):
@@ -174,7 +169,7 @@ def process_and_store_data(batch_size=20, fetch_size=100, max_records=None):
         data = []
         for _ in range(fetch_limit):
             item = collection.find_one_and_update(
-                {"comment_processed": {"$ne": True}, "comment_processing": {"$ne": True}, "key": {"$nin": list(processed_urls)}},
+                {"content_processed": {"$ne": True}, "content_processing": {"$ne": True}, "key": {"$nin": list(processed_urls)}},
                 {"$set": {"comment_processing": True}},
                 return_document=True
             )
@@ -189,46 +184,47 @@ def process_and_store_data(batch_size=20, fetch_size=100, max_records=None):
         comment_documents = []
         update_processed = []
 
-        for item in data:
-            text_date = None
-            # 文章主體處理並準備插入到 content_collection
-            processed_content,text_date = process_content_item(item)
-            if processed_content is not None:
-                content_operations.append(processed_content)
+        # 使用 ThreadPoolExecutor 進行平行處理
+        with ThreadPoolExecutor() as executor:
+            # 提交文章處理任務
+            content_futures = {executor.submit(process_content_item, item): item for item in data}
+            for future in as_completed(content_futures):
+                result, text_date = future.result()
+                if result is not None:
+                    content_operations.append(result)
 
-            # 準備留言格式
-            article_data = {
-                "source": 'ptt',
-                "publish_date": text_date,
-                "title": item["value"].get("title", ""),
-                "author": item["value"].get("author", ""),
-                "content": preprocess_text(item["value"].get("post", ""))
-            }
-
-            # 處理所有留言並準備插入到 comment_collection
-            article_key = item["key"]
-            processed_comments = [process_comment(comment, article_key, article_data) for comment in item["value"].get("comment_num", []) if process_comment(comment, article_key, article_data) is not None]
-
-            if processed_comments:
-                comment_document = {
-                    "url": article_key,
-                    "data": {
-                        "source": 'ptt',
-                        "publish_date": text_date,
-                        "title": item["value"].get("title", ""),
-                        "author": item["value"].get("author", ""),
-                        "content": preprocess_text(item["value"].get("post", "")),
-                        "comments": processed_comments
-                    }
+                article_data = {
+                    "source": 'ptt',
+                    "publish_date": text_date,
+                    "title": content_futures[future]["value"].get("title", ""),
+                    "author": content_futures[future]["value"].get("author", ""),
+                    "content": preprocess_text(content_futures[future]["value"].get("post", ""))
                 }
-                comment_documents.append(comment_document)
 
-            update_processed.append(UpdateOne({"_id": item["_id"]}, {"$set": {"comment_processed": True}, "$unset": {"comment_processing": ""}}))
+                # 提交留言處理任務
+                comment_futures = [executor.submit(process_comment, comment, content_futures[future]["key"], article_data) for comment in content_futures[future]["value"].get("comment_num", [])]
+                processed_comments = [cf.result() for cf in as_completed(comment_futures) if cf.result() is not None]
+
+                if processed_comments:
+                    comment_document = {
+                        "url": content_futures[future]["key"],
+                        "data": {
+                            "source": article_data["source"],
+                            "publish_date": article_data["publish_date"],
+                            "title": article_data["title"],
+                            "author": article_data["author"],
+                            "content": preprocess_text(content_futures[future]["value"].get("post", "")),
+                            "comments": processed_comments
+                        }
+                    }
+                    comment_documents.append(comment_document)
+
+                update_processed.append(UpdateOne({"_id": content_futures[future]["_id"]}, {"$set": {"content_processed": True}, "$unset": {"content_processing": ""}}))
 
         if content_operations:
             content_collection.bulk_write(content_operations)
         if comment_documents:
-            comment_collection.insert_many(comment_documents)  # 留言集合插入
+            comment_collection.insert_many(comment_documents)
         if update_processed:
             collection.bulk_write(update_processed)
 
@@ -246,5 +242,5 @@ def process_and_store_data(batch_size=20, fetch_size=100, max_records=None):
     print(f"數據處理完成，總運行時間：{total_time:.2f} 秒")
 
 # 執行處理
-process_and_store_data(max_records=1)
+process_and_store_data(max_records=None)
 print("數據處理完成並存儲至 MongoDB collections: ckip_data_content 和 ckip_data_comment")

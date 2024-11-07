@@ -151,12 +151,12 @@ CUSTOM_STOPWORDS = {
 class DatabaseManager:
     """資料庫管理類別，包括MongoDB和MySQL的配置與操作"""
 
-    MONGO_URI = "mongodb://user4:password4@35.189.181.117:28017/admin"  # MongoDB連線字串
+    MONGO_URI = 'mongodb://xxx:xxxx@<IP>:28017/admin'  # MongoDB連線字串
     MYSQL_CONFIG = {  # MySQL配置字典
-        'host': '34.81.244.193',
+        'host': '<IP>',
         'database': 'PTT',
-        'user': 'user3',
-        'password': 'password3',
+        'user': 'xxxx',
+        'password': 'xxxx',
         'pool_size': 5,
         'pool_name': 'mypool',
         'buffered': True

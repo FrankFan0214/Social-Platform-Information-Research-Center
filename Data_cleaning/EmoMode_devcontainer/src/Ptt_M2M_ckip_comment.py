@@ -9,7 +9,7 @@ from pymongo import MongoClient, UpdateOne
 from pymongo.errors import ServerSelectionTimeoutError
 
 # 初始化 MongoDB 連接
-client = MongoClient('mongodb://XXXX:XXXX@<IP>:28017/admin')
+client = MongoClient('mongodb://xxx:xxxx@<IP>:28017/admin')
 db = client["kafka"]
 collection = db["Ptt"]
 db2 = client["cleandata"]
@@ -38,7 +38,7 @@ def preprocess_text(text):
 def calculate_word_frequency(word_list):
     return Counter(word_list)
 
-# 單則留言處理函數，處理 CKIP 分詞、詞性標註、NER
+# 單則留言處理函數
 def process_comment(comment):
     original_time = comment.get("time", "")
     ip_address = None
@@ -115,6 +115,9 @@ def process_and_store_content_data(batch_size=20, fetch_size=100, max_records=No
     processed_count = 0
     start_time = time.time()
 
+    # 獲取已處理過的文章 URL
+    processed_urls = set(output_collection.distinct("url"))
+
     while True:
         if max_records is not None:
             remaining_records = max_records - processed_count
@@ -124,8 +127,17 @@ def process_and_store_content_data(batch_size=20, fetch_size=100, max_records=No
         else:
             fetch_limit = fetch_size
 
-        # 查找未處理過的文檔，使用 comment_processed 標記
-        data = list(collection.find({"comment_processed": {"$ne": True}}, {"key": 1, "value": 1}).limit(fetch_limit))
+        # 使用 find_one_and_update 查找未在目標 collection 中且未處理過的文檔，設置臨時標記 comment_processing
+        data = []
+        for _ in range(fetch_limit):
+            item = collection.find_one_and_update(
+                {"comment_processed": {"$ne": True}, "comment_processing": {"$ne": True}, "key": {"$nin": list(processed_urls)}},
+                {"$set": {"comment_processing": True}},
+                return_document=True
+            )
+            if item:
+                data.append(item)
+
         if not data:
             print("無更多未處理的文章。")
             break
@@ -136,7 +148,12 @@ def process_and_store_content_data(batch_size=20, fetch_size=100, max_records=No
             processed_item = process_content_item(item)
             if processed_item is not None:
                 operations.append(processed_item)
-                update_processed.append(UpdateOne({"_id": item["_id"]}, {"$set": {"comment_processed": True}}))
+                update_processed.append(UpdateOne({"_id": item["_id"]}, {"$set": {"comment_processed": True}, "$unset": {"comment_processing": ""}}))
+
+        # 打印批量操作的大小，確認每次批量處理的數量
+        print(f"批量操作準備插入 {len(operations)} 筆資料到目標 collection")
+        print(f"批量操作準備更新 {len(update_processed)} 筆資料的處理狀態")
+
 
         if operations:
             output_collection.bulk_write(operations)

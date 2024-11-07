@@ -9,7 +9,7 @@ from pymongo import MongoClient, UpdateOne
 from pymongo.errors import ServerSelectionTimeoutError
 
 # 初始化 MongoDB 連接
-client = MongoClient('mongodb://airflow:airflow@35.189.181.117:28017/admin')
+client = MongoClient('mongodb://XXXX:XXXX@<IP>:28017/admin')
 db = client["kafka"]
 collection = db["Dcard"]
 db2 = client["cleandata"]

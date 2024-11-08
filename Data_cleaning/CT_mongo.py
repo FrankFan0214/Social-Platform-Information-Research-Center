@@ -19,7 +19,7 @@ print("CKIP model loaded")
 
 # 配置 Kafka Consumer
 conf = {
-    'bootstrap.servers': '104.155.214.8:9092',
+    'bootstrap.servers': '<IP>:9092',
     'group.id': '3',
     'auto.offset.reset': 'earliest'
 }
@@ -119,7 +119,7 @@ def process_kafka_messages(consumer, collection, message_limit=200): # 設置筆
 
 def main():
     try:
-        mongo_client = MongoClient("mongodb://user5:password5@35.189.181.117:28017/admin")
+        mongo_client = MongoClient("mongodb://xxxx:xxxxx@<IP>:28017/admin")
         check_mongodb_connection(mongo_client)
 
         collection = mongo_client['cleandata']['CT']

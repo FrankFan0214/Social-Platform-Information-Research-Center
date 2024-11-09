@@ -199,7 +199,6 @@ def process_and_store_data(batch_size=20, fetch_size=100, max_records=None):
                 print(f"文章 {item['_id']} 的內容或日期為空，跳過")
                 continue
 
-            processed_content, text_date = result
             content_operations.append(processed_content)
             # 準備留言格式
             article_data = {

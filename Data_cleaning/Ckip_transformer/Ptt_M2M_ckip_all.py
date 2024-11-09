@@ -43,27 +43,27 @@ def calculate_word_frequency(word_list):
 
 
 # 日期處理函數
-def process_date(text_date_str):
-    # 預設年份
-    default_year = "2024"
+# def process_date(text_date_str):
+#     # 預設年份
+#     default_year = "2024"
     
-    try:
-        # 如果日期包含"2023"，替換成"2024"
-        if "2023" in text_date_str:
-            text_date_str = text_date_str.replace("2023", "2024")
+#     try:
+#         # 如果日期包含"2023"，替換成"2024"
+#         if "2023" in text_date_str:
+#             text_date_str = text_date_str.replace("2023", "2024")
         
-        # 嘗試解析完整格式 YYYY/MM/DD
-        if len(text_date_str.split('/')) == 3:
-            text_date = pd.to_datetime(text_date_str, format="%Y/%m/%d").strftime("%Y-%m-%d")
-        # 嘗試解析短格式 MM/DD，假設年份為 2024
-        elif len(text_date_str.split('/')) == 2:
-            text_date = pd.to_datetime(f"{default_year}/{text_date_str}", format="%Y/%m/%d").strftime("%Y-%m-%d")
-        else:
-            raise ValueError("Unsupported date format")
-    except ValueError:
-        text_date = None  # 如果無法解析，設置為 None
+#         # 嘗試解析完整格式 YYYY/MM/DD
+#         if len(text_date_str.split('/')) == 3:
+#             text_date = pd.to_datetime(text_date_str, format="%Y/%m/%d").strftime("%Y-%m-%d")
+#         # 嘗試解析短格式 MM/DD，假設年份為 2024
+#         elif len(text_date_str.split('/')) == 2:
+#             text_date = pd.to_datetime(f"{default_year}/{text_date_str}", format="%Y/%m/%d").strftime("%Y-%m-%d")
+#         else:
+#             raise ValueError("Unsupported date format")
+#     except ValueError:
+#         text_date = None  # 如果無法解析，設置為 None
 
-    return text_date
+#     return text_date
 
 
 # 處理單篇文章內容的函數
@@ -72,8 +72,9 @@ def process_content_item(item):
     print(f"正在處理文章: {item['key']}")
 
     # 日期處理
-    text_date_str = value.get("date", "未知日期")
-    text_date = process_date(text_date_str)
+    # text_date_str = value.get("date", "未知日期")
+    # text_date = process_date(text_date_str)
+    text_date = value.get("date", "未知日期")
     # 內容預處理
     raw_content = value.get("post", "")
     preprocessed_content = preprocess_text(raw_content)
@@ -174,8 +175,8 @@ def process_and_store_data(batch_size=20, fetch_size=100, max_records=None):
         data = []
         for _ in range(fetch_limit):
             item = collection.find_one_and_update(
-                {"comment_processed": {"$ne": True}, "comment_processing": {"$ne": True}, "key": {"$nin": list(processed_urls)}},
-                {"$set": {"comment_processing": True}},
+                {"content_processed": {"$ne": True}, "content_processing": {"$ne": True}},
+                {"$set": {"content_processing": True}},
                 return_document=True
             )
             if item:
@@ -190,12 +191,16 @@ def process_and_store_data(batch_size=20, fetch_size=100, max_records=None):
         update_processed = []
 
         for item in data:
-            text_date = None
-            # 文章主體處理並準備插入到 content_collection
-            processed_content,text_date = process_content_item(item)
-            if processed_content is not None:
-                content_operations.append(processed_content)
+            # 處理主體文章
+            result = process_content_item(item)
+            processed_content, text_date = result if result else (None, None)  # 解包
 
+            if processed_content is None or text_date is None:
+                print(f"文章 {item['_id']} 的內容或日期為空，跳過")
+                continue
+
+            processed_content, text_date = result
+            content_operations.append(processed_content)
             # 準備留言格式
             article_data = {
                 "source": 'ptt',
@@ -223,7 +228,7 @@ def process_and_store_data(batch_size=20, fetch_size=100, max_records=None):
                 }
                 comment_documents.append(comment_document)
 
-            update_processed.append(UpdateOne({"_id": item["_id"]}, {"$set": {"comment_processed": True}, "$unset": {"comment_processing": ""}}))
+            update_processed.append(UpdateOne({"_id": item["_id"]}, {"$set": {"content_processed": True}, "$unset": {"content_processing": ""}}))
 
         if content_operations:
             content_collection.bulk_write(content_operations)
@@ -246,5 +251,5 @@ def process_and_store_data(batch_size=20, fetch_size=100, max_records=None):
     print(f"數據處理完成，總運行時間：{total_time:.2f} 秒")
 
 # 執行處理
-process_and_store_data(max_records=1)
+process_and_store_data(max_records=None)
 print("數據處理完成並存儲至 MongoDB collections: ckip_data_content 和 ckip_data_comment")

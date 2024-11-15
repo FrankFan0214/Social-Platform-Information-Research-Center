@@ -17,7 +17,7 @@
 最後透過Tableau進行資料視覺化，產生出分析的報表。
 
 ## 關鍵程式與技術
-### Crawl
+### Crawler
 1. PTT Crawler (Producer)
 >在記憶體中執行網站瀏覽，以討論版逐頁輪序讀取的方式抓取文章相關訊息，可透過時間限制最後抓取日期或以網頁頁數決定爬蟲範圍，將爬取結果上傳至Kafka。
 2. Dcard Crawler (Producer)
@@ -30,10 +30,38 @@
 >為了面向指定單位有各自輿情觀測需求，需要將原始資料透過各自的輿情分析模型產出報告，故須提供各單位方便取用的數據渠道。
 * 解決方案：
 >透過建立kafka，使各單位訂閱其需要的Topic，各自取用，不會互相影響，開發producer與consumer，嵌入特定商業邏輯（爬蟲、資料導入、NLP）。
+* 部署環境：​
+    * GCP虛擬機​
+    * 創建topic:ptt-topic、dcard-topic、news-topic
+* 功能實現​
+    * Crawl Producer：Ptt、Dcard、News
+    * Ckip consumer：News 、Ptt、Dcard
 
 ### Airflow 部署應用
 * 議題需求：
 >輿情分析具有即時性與時效性，需要能夠隨時獲取最新的輿論狀況，並且產出相應的分析報表。
 * 解決方案：
->* 最小方案：使用docker快速部署Airflow local executor，提供單一節點處理所有DAG。
->* 最佳配置：使用docker compose部署Airflow Master與Worker，提供多節點處理所有DAG。
+    * 最小方案：使用docker快速部署Airflow local executor，提供單一節點處理所有DAG。
+    * 最佳配置：使用docker compose部署Airflow Master與Worker，提供多節點處理所有DAG。
+* 部署環境 :
+    * GCP虛擬機
+    * 一台Master主節點、與多台worker節點
+* 功能實現​
+    * 為了能夠確保所有節點都能夠取用相同的DAG目錄，需要安裝並正確配置了 GlusterFS 客戶端​
+    * Master：透過docker compose，將Airflow、MySQL、Redis各項服務安裝於目標虛擬機​
+    * Worker：透過docker compose，將Airflow與tasks執行python環境與套件安裝於目標虛擬機
+
+### NLP 文本分析
+* 議題需求：​
+>本案為輿情分析，需要對文本進行分詞、貼標與辨識，並且需要判斷文本的情緒，以滿足輿情觀察的目的
+* 部署環境：​GCP虛擬機
+* 功能實現​
+  * CKIP Transformer​
+  * 情緒分析模型
+
+### CKIP Transformer​
+
+### 情緒詞分析​
+
+### GCP
+將Kafka、MongoDB、MySQL、Airflow等系統運用雲端系統管理服務，無時無刻都可以存取並監控運行狀態。

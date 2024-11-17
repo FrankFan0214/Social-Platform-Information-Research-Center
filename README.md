@@ -11,6 +11,7 @@
 
 ## 流程架構與工具運用
 <img width="664" alt="螢幕擷取畫面 2024-11-17 110118" src="https://github.com/user-attachments/assets/ba528242-f472-4f5b-8c3e-65f391a1fa68">
+
 分別在PTT、Dcard、News進行文章資訊的爬蟲，將蒐集到的資料統一produce到Kafka。
 再從Kafka consume下來後，透過CKIP Transformers對文章的內容以及留言進行分詞分析，將分析後的資料存至MongoDB資料庫。
 從MongoDB取出分詞後的資料，經過Data Pipeline，轉換成BI所需要的資料表並存放在MySQL資料庫。
